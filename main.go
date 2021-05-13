@@ -131,7 +131,7 @@ func (info fileInfo) write_valid(toFile string) {
             }
         }
         
-        file, err := os.OpenFile(info.filename, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
+        file, err := os.OpenFile(info.filename, os.O_WRONLY|os.O_CREATE, 0600)
         defer file.Close()
 
         if err != nil {
@@ -166,7 +166,7 @@ func (info fileInfo) write_invalid(toFile string) {
             }
         }
 
-        file, err := os.OpenFile(info.filename, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
+        file, err := os.OpenFile(info.filename, os.O_WRONLY|os.O_CREATE, 0600)
         defer file.Close()
 
         if err != nil {
@@ -180,12 +180,12 @@ func (info fileInfo) write_invalid(toFile string) {
 func main() { 
     str := "Hey bro"
     f_info := setup("man", []byte(str))
-    f_info = f_info.new_info("main")
+    f_info = f_info.new_info("main.go")
 
     //fmt.Print(string(f_info.data), " -> \n\t\t'" + f_info.filename + "' has ", f_info.filesize * 8, " bits, which is ", f_info.filesize, " in bytes which is")
     //fmt.Printf(" %.1f MB!", f_info.size_in_mb)
 
     f_info.gather_all()
     f_info.write_valid("man")
-    f_info.write_invalid("man2")
+    f_info.write_invalid("man3")
 }
