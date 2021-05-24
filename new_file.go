@@ -4,6 +4,7 @@ import (
     "os"
     "log"
     "io/ioutil"
+    "encoding/json"
     "fmt"
 )
 
@@ -22,6 +23,15 @@ type FileInfo struct {
     errors          []error
 }
 
+type JSONInfo struct {
+    Dir             string      `json:"dir"`
+    All_file        []string    `json:"all_files"`
+    To_delete       []string    `json:"to_delete"`
+    Success_count   int         `json:"success"`
+    Err_count       int         `json:"failures"`
+    Errors          []string    `json:"errors"`
+}
+
 func (info *FileInfo) success(msg string) {
     info._log.success.Println(msg)
     info.success_count++
@@ -36,7 +46,7 @@ func setup() *FileInfo {
 
     // Setting up loggers and default info for struct FileInfo
     l := LOG{}
-    info := &FileInfo{err_count: 0, all_files: make([]string, 1), to_delete: make([]string, 1), errors: make([]error, 1)}
+    info := &FileInfo{err_count: 0}
 
     _, err := os.Stat("messages")
     info._log = l
@@ -73,14 +83,13 @@ func setup() *FileInfo {
     return info
 }
 
-func (info *FileInfo) read_dir() ([]string, error) {
+func (info *FileInfo) read_dir() []string {
     var all_files []string
 
     files, err := ioutil.ReadDir(info.dir)
 
     if err != nil {
         info._error(err, "Couldn't read" + info.dir)
-        return []string{""}, err
     }
 
     for _, f := range files {
@@ -89,10 +98,22 @@ func (info *FileInfo) read_dir() ([]string, error) {
 
     info.all_files = all_files
 
-    return info.all_files, nil
+    return info.all_files
 }
 
 func (info *FileInfo) check_errors() {
+    JI := JSONInfo{Dir: info.dir, All_file: info.all_files, To_delete: info.to_delete, Err_count: info.err_count, Success_count: info.success_count}
+
+    for i := range info.errors {
+        if i == len(info.errors) - 1 {
+            break
+        }
+        JI.Errors = append(JI.Errors, info.errors[i].Error())
+    }
+
+    file, _ := json.MarshalIndent(JI, "", "\t")
+    _ = ioutil.WriteFile("info.json", file, 0644)
+
     if info.err_count > info.success_count {
         panic(info.errors[info.err_count - 1])
     }
@@ -107,8 +128,6 @@ func (info *FileInfo) remove(filename string, size int) {
 
     s := fmt.Sprintf("Successfully removed %s of size %dmb", filename, size / 1024 / 1024)
     info.success(s)
-
-    info.check_errors()
 }
 
 func (info *FileInfo) check_sizes() {
@@ -127,10 +146,14 @@ func (info *FileInfo) check_sizes() {
 
         info.success("Successfully read " + info.all_files[i])
     }
+
+    info.check_errors()
 }
 
 func main() {
     info := setup()
     info.read_dir()
     info.check_sizes()
+
+    fmt.Println(info)
 }
